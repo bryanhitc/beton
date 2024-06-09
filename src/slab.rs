@@ -151,33 +151,15 @@ impl<T> Slab<T> {
     /// Returns an iterator over all values.
     ///
     /// The iterator yields all values from start to end.
-    pub fn values(&self) -> impl Iterator<Item = &T> + '_ {
-        self.keys().filter_map(|key| {
-            self.entries.get(usize::from(key)).map(|v| {
-                // SAFETY: We just validated that the index contains a key
-                // for this value, meaning we can safely assume that this
-                // value is initialized.
-                unsafe { v.assume_init_ref() }
-            })
-        })
+    pub fn values(&self) -> impl Iterator<Item = &'_ T> + '_ {
+        self.iter().map(|(_key, val)| val)
     }
 
     /// Returns an iterator that allows modifying each value.
     ///
     /// The iterator yields all values from start to end.
-    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
-        let mut prev_index = None;
-        let mut entries = self.entries.iter_mut();
-
-        self.index.occupied().filter_map(move |index| {
-            let relative_index = match prev_index.replace(index) {
-                None => 0,
-                Some(prev) => index - prev - 1,
-            };
-            entries
-                .nth(relative_index)
-                .map(|t| unsafe { t.assume_init_mut() })
-        })
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &'_ mut T> + '_ {
+        self.iter_mut().map(|(_key, val)| val)
     }
 
     /// Consumes `self` and returns an iterator over all values.
