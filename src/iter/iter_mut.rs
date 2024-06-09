@@ -31,25 +31,15 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         // Get the next index and update all cursors
         let index = self.occupied.next()?;
-        let skip = match self.prev_index {
+        let relative_index = match self.prev_index.replace(index) {
             None => 0,
             Some(prev_index) => index - prev_index - 1,
         };
-        self.prev_index = Some(index);
-        advance_by(&mut self.entries, skip);
 
         // SAFETY: we just confirmed that there was in fact an entry at this index
         self.entries
-            .next()
+            .nth(relative_index)
             .map(|t| (index.into(), unsafe { t.assume_init_mut() }))
-    }
-}
-
-// TODO: Waiting for `Iterator::advance_by` to be stabilized
-// https://github.com/rust-lang/rust/issues/77404
-fn advance_by(iter: &mut impl Iterator, n: usize) {
-    for _ in 0..n {
-        iter.next();
     }
 }
 
