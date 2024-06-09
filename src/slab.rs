@@ -1,5 +1,5 @@
 use crate::indexer::Indexer;
-use crate::{IntoIter, IntoValues, Iter, IterMut, Key, Keys, Values, ValuesMut};
+use crate::{IntoIter, IntoValues, Iter, IterMut, Key, Values, ValuesMut};
 
 use std::mem::{self, MaybeUninit};
 use std::ops::{Index, IndexMut};
@@ -144,8 +144,8 @@ impl<T> Slab<T> {
     /// Returns an iterator over all keys.
     ///
     /// The iterator yields all keys from start to end.
-    pub fn keys(&self) -> Keys<'_> {
-        Keys::new(self)
+    pub fn keys(&self) -> impl Iterator<Item = Key> + '_ {
+        self.index.occupied().map(Key::new)
     }
 
     /// Returns an iterator over all values.
