@@ -1,5 +1,5 @@
 use crate::indexer::Indexer;
-use crate::{IntoIter, IntoValues, Iter, IterMut, Key, ValuesMut};
+use crate::{IntoIter, IntoValues, Iter, IterMut, Key};
 
 use std::mem::{self, MaybeUninit};
 use std::ops::{Index, IndexMut};
@@ -165,8 +165,19 @@ impl<T> Slab<T> {
     /// Returns an iterator that allows modifying each value.
     ///
     /// The iterator yields all values from start to end.
-    pub fn values_mut(&mut self) -> ValuesMut<'_, T> {
-        ValuesMut::new(self)
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut T> + '_ {
+        let mut prev_index = None;
+        let mut entries = self.entries.iter_mut();
+
+        self.index.occupied().filter_map(move |index| {
+            let relative_index = match prev_index.replace(index) {
+                None => 0,
+                Some(prev) => index - prev - 1,
+            };
+            entries
+                .nth(relative_index)
+                .map(|t| unsafe { t.assume_init_mut() })
+        })
     }
 
     /// Consumes `self` and returns an iterator over all values.
